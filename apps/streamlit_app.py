@@ -12,6 +12,12 @@ k=st.slider("How many recommendations?",5,50,10)
 
 try:
     artifacts=load_artifacts()
+
+    if artifacts.demo_mode:
+        st.warning("Running in DEMO mode (using bundled tiny dataset).")
+    else:
+        st.success("Running with full dataset from ./data")
+
     recs=recommend_popular(artifacts,k=k)
     st.dataframe(recs[["book_id","title","n_ratings"]],width="stretch")
 except FileNotFoundError as e:
