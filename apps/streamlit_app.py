@@ -14,6 +14,6 @@ try:
     artifacts=load_artifacts()
     recs=recommend_popular(artifacts,k=k)
     st.dataframe(recs[["book_id","title","n_ratings"]],width="stretch")
-except:
+except FileNotFoundError as e:
     st.error(str(e))
     st.info("Add the dataset under ./data (books.csv,ratings.csv) or run in demo mode later.")
