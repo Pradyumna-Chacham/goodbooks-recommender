@@ -1,0 +1,19 @@
+venv/
+__pycache__/
+.DS_Store
+
+# ignore working copies
+latest working/
+workingALDA/
+
+# ignore data and models
+data/
+new_data/
+models/
+*.pkl
+*.pth
+*.pt
+
+# ignore generated report images
+report/*.png
+figures/
