@@ -1,12 +1,37 @@
+# ======================
+# Python
+# ======================
 venv/
 __pycache__/
+*.pyc
+
+# ======================
+# Tooling / Testing
+# ======================
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ======================
+# OS / Editors
+# ======================
 .DS_Store
+.vscode/
+.idea/
+*.swp
 
-# ignore working copies
-latest working/
-workingALDA/
+# ======================
+# Build / Packaging
+# ======================
+dist/
+build/
+*.egg-info/
 
-# ignore data and models
+# ======================
+# Data & Models (NOT versioned)
+# ======================
 data/
 new_data/
 models/
@@ -14,6 +39,21 @@ models/
 *.pth
 *.pt
 
-# ignore generated report images
+# ======================
+# Generated Outputs
+# ======================
 report/*.png
 figures/
+
+# ======================
+# Secrets / Runtime
+# ======================
+.env
+.env.*
+.streamlit/
+
+# ======================
+# Working Copies / Scratch
+# ======================
+latest working/
+workingALDA/
