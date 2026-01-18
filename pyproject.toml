@@ -1,7 +1,7 @@
 [project]
 name = "goodbooks-rec"
 version = "0.1.0"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = ["pandas"]
 
 [project.optional-dependencies]
