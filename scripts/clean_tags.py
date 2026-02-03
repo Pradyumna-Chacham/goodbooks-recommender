@@ -18,8 +18,8 @@ Outputs (in ./new_data):
 """
 
 import os
-import re
 import pickle
+import re
 from collections import Counter
 
 import pandas as pd
@@ -35,45 +35,109 @@ FREQ_MIN = 30  # minimum number of distinct books per tag
 
 # Reader-behavior / format / shelf tags to always drop
 BLACKLIST = {
-    "to-read", "favorites", "favourites", "owned", "kindle",
-    "audiobook", "audio", "ebook", "e-book", "paperback", "hardcover",
-    "currently-reading", "did-not-finish", "dnf", "tbr",
-    "library", "my-library", "book-club", "bookclub", "wishlist",
+    "to-read",
+    "favorites",
+    "favourites",
+    "owned",
+    "kindle",
+    "audiobook",
+    "audio",
+    "ebook",
+    "e-book",
+    "paperback",
+    "hardcover",
+    "currently-reading",
+    "did-not-finish",
+    "dnf",
+    "tbr",
+    "library",
+    "my-library",
+    "book-club",
+    "bookclub",
+    "wishlist",
 }
 
 # Genre / theme keywords we consider "semantic"
 GENRE_KEYWORDS = [
     # fantasy & related
-    "fantasy", "magic", "dragon", "wizard", "witch",
-    "epic-fantasy", "urban-fantasy", "dark-fantasy", "high-fantasy",
+    "fantasy",
+    "magic",
+    "dragon",
+    "wizard",
+    "witch",
+    "epic-fantasy",
+    "urban-fantasy",
+    "dark-fantasy",
+    "high-fantasy",
     # sci-fi & related
-    "sci-fi", "scifi", "science-fiction", "space", "space-opera",
-    "dystopian", "post-apocalyptic", "aliens", "cyberpunk",
+    "sci-fi",
+    "scifi",
+    "science-fiction",
+    "space",
+    "space-opera",
+    "dystopian",
+    "post-apocalyptic",
+    "aliens",
+    "cyberpunk",
     # crime / mystery / thriller
-    "mystery", "crime", "detective", "thriller", "suspense", "noir",
+    "mystery",
+    "crime",
+    "detective",
+    "thriller",
+    "suspense",
+    "noir",
     # romance & relationships
-    "romance", "love-story", "contemporary-romance", "historical-romance",
+    "romance",
+    "love-story",
+    "contemporary-romance",
+    "historical-romance",
     # horror & dark
-    "horror", "ghost", "gothic", "creepy",
+    "horror",
+    "ghost",
+    "gothic",
+    "creepy",
     # historical / classics / literature
-    "historical", "historical-fiction", "classics", "literature",
+    "historical",
+    "historical-fiction",
+    "classics",
+    "literature",
     "literary-fiction",
     # general fiction / contemporary
-    "fiction", "contemporary", "contemporary-fiction",
+    "fiction",
+    "contemporary",
+    "contemporary-fiction",
     # YA / children
-    "young-adult", "ya", "teen", "children", "middle-grade",
+    "young-adult",
+    "ya",
+    "teen",
+    "children",
+    "middle-grade",
     # non-fiction & topics
-    "non-fiction", "nonfiction", "biography", "memoir",
-    "philosophy", "psychology", "economics", "politics", "history",
+    "non-fiction",
+    "nonfiction",
+    "biography",
+    "memoir",
+    "philosophy",
+    "psychology",
+    "economics",
+    "politics",
+    "history",
     # formats that still imply content style
-    "graphic-novel", "comics", "manga",
+    "graphic-novel",
+    "comics",
+    "manga",
     # myth / legend
-    "mythology", "folklore", "fairy-tales", "folktales",
+    "mythology",
+    "folklore",
+    "fairy-tales",
+    "folktales",
     # war / military
-    "war", "military",
+    "war",
+    "military",
     # poetry
     "poetry",
 ]
+
 
 # Normalize GENRE_KEYWORDS
 def _norm(s: str) -> str:
@@ -81,6 +145,7 @@ def _norm(s: str) -> str:
     s = re.sub(r"[^a-z0-9\- ]", "", s)
     s = s.strip()
     return s
+
 
 GENRE_KEYWORDS = [_norm(k) for k in GENRE_KEYWORDS]
 
@@ -158,9 +223,7 @@ def main():
     print(f"Unique normalized tags: {len(tag_book_counts):,}")
 
     # Frequency filter
-    frequent_tags = set(
-        tag for tag, cnt in tag_book_counts.items() if cnt >= FREQ_MIN
-    )
+    frequent_tags = set(tag for tag, cnt in tag_book_counts.items() if cnt >= FREQ_MIN)
     print(f"Tags with >= {FREQ_MIN} books: {len(frequent_tags):,}")
 
     # Apply blacklist + genre semantic filter
@@ -181,9 +244,8 @@ def main():
     filtered["genre_tag"] = filtered["clean_tag"].apply(map_subgenre)
 
     # Build per-goodreads_book_id genre lists
-    book_genre_series = (
-        filtered.groupby("goodreads_book_id")["genre_tag"]
-        .apply(lambda tags: sorted(set(tags)))
+    book_genre_series = filtered.groupby("goodreads_book_id")["genre_tag"].apply(
+        lambda tags: sorted(set(tags))
     )
 
     print(f"Books with at least one genre tag: {len(book_genre_series):,}")
@@ -193,15 +255,11 @@ def main():
     # ----------------------------------------------------------------
     books_small = books[["book_id", "goodreads_book_id", "title", "authors"]].copy()
     book_genres_df = book_genre_series.reset_index()
-    book_genres_df["genres"] = book_genres_df["genre_tag"].apply(
-        lambda lst: ",".join(lst)
-    )
+    book_genres_df["genres"] = book_genres_df["genre_tag"].apply(lambda lst: ",".join(lst))
     book_genres_df = book_genres_df.drop(columns=["genre_tag"])
 
     # Merge to attach book_id/title/authors
-    metadata = books_small.merge(
-        book_genres_df, on="goodreads_book_id", how="inner"
-    )
+    metadata = books_small.merge(book_genres_df, on="goodreads_book_id", how="inner")
 
     print(f"Books in metadata with genres: {len(metadata):,}")
 

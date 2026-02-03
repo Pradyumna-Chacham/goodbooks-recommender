@@ -16,15 +16,14 @@ Output:
 import os
 import pickle
 import random
-import numpy as np
-from tqdm import tqdm
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from tqdm import tqdm
 
-
-#SEED====================
+# SEED====================
 SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
@@ -55,9 +54,9 @@ EVAL_PATH = f"{DATA}/eval_data.pkl"
 # ============================================================
 # Load data
 # ============================================================
-print("="*60)
+print("=" * 60)
 print(" OPTIMIZED RL TRAINER (Option A + Option C) ")
-print("="*60)
+print("=" * 60)
 
 svd = pickle.load(open(SVD_PATH, "rb"))
 item_sim = pickle.load(open(ITEMCF_PATH, "rb"))
@@ -78,6 +77,7 @@ print(f"Users: {num_users}, Items: {num_items}, RL_dim={RL_dim}")
 
 # training data
 import pandas as pd
+
 train_df = pickle.load(open(TRAIN_PATH, "rb"))
 user_pos = train_df.groupby("user_id")["book_id"].apply(list).to_dict()
 
@@ -176,11 +176,7 @@ class QNet(nn.Module):
     def __init__(self, dim=150):  # IMPORTANT FIX
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, 1)
+            nn.Linear(dim, 256), nn.ReLU(), nn.Linear(256, 128), nn.ReLU(), nn.Linear(128, 1)
         )
 
     def forward(self, sa):
@@ -279,7 +275,7 @@ for ep in range(1, epochs + 1):
     num_batches = len(samples) // batch_size
 
     for bi in tqdm(range(num_batches), desc=f"Epoch {ep}"):
-        batch = samples[bi * batch_size:(bi + 1) * batch_size]
+        batch = samples[bi * batch_size : (bi + 1) * batch_size]
 
         states, items, rewards = [], [], []
 
@@ -312,7 +308,7 @@ for ep in range(1, epochs + 1):
         rewards = torch.tensor(np.array(rewards), dtype=torch.float32).to(device)
 
         q_values = score_vectorized(qnet, states, items)
-        loss = ((q_values - rewards)**2).mean()
+        loss = ((q_values - rewards) ** 2).mean()
 
         optimizer.zero_grad()
         loss.backward()

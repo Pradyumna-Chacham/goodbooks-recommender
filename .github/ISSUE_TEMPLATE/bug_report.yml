@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a reproducible bug
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Please include enough detail to reproduce.
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what actually happened?
+      placeholder: Clear, step-by-step description.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Include exact commands / inputs if possible.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / traceback
+      description: Paste any relevant error output.
+      render: shell
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: Python version, OS, install method (pip/uv/conda), etc.
+      placeholder: "Python 3.12, macOS 14, pip -e ."
+    validations:
+      required: true

@@ -1,59 +1,81 @@
 # ======================
-# Python
+# Python / Virtual Envs
 # ======================
+.venv/
 venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
 # ======================
-# Tooling / Testing
+# Tooling / Testing / Coverage
 # ======================
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
 .coverage
+.coverage.*
 htmlcov/
+pytestdebug.log
+
+# ======================
+# Build / Packaging
+# ======================
+build/
+dist/
+*.egg-info/
+.eggs/
 
 # ======================
 # OS / Editors
 # ======================
 .DS_Store
+.DS_Store?
+Thumbs.db
 .vscode/
 .idea/
 *.swp
+*.swo
 
 # ======================
-# Build / Packaging
+# Jupyter / Notebooks
 # ======================
-dist/
-build/
-*.egg-info/
+.ipynb_checkpoints/
 
 # ======================
-# Data & Models (NOT versioned)
+# Data & Models (Generated / Large Artifacts)
 # ======================
+# NOTE: Raw dataset CSVs are intentionally versioned.
+# Only ignore derived or regenerated artifacts.
 data/
 new_data/
-models/
-*.pkl
-*.pth
-*.pt
+report/
+models/*.pkl
+models/*.pth
+models/*.pt
+models/*.npz
 
 # ======================
-# Generated Outputs
+# Generated Figures / Outputs
 # ======================
-report/*.png
 figures/
+outputs/
 
 # ======================
-# Secrets / Runtime
+# Streamlit
+# ======================
+# Runtime state only (keep config.toml if added later)
+.streamlit/secrets.toml
+.streamlit/.cache/
+
+# ======================
+# Secrets / Environment
 # ======================
 .env
 .env.*
-.streamlit/
+.envrc
 
 # ======================
-# Working Copies / Scratch
+# Logs
 # ======================
-latest working/
-workingALDA/
+*.log

@@ -15,14 +15,14 @@ df_dense is used ONLY to build item index.
 
 import os
 import pickle
+import random
+
 import numpy as np
 import pandas as pd
 import torch
-import random
-from tqdm import tqdm
-from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import PCA
-
+from sklearn.metrics.pairwise import cosine_similarity
+from tqdm import tqdm
 
 # ============================================================
 # Reproducibility
@@ -44,9 +44,10 @@ MODELS = "models"
 os.makedirs(MODELS, exist_ok=True)
 
 TRAIN = f"{DATA}/train_df.pkl"
-DENSE = f"{DATA}/df_dense.pkl"       # used ONLY for item index (safe)
+DENSE = f"{DATA}/df_dense.pkl"  # used ONLY for item index (safe)
 EVAL = f"{DATA}/eval_data.pkl"
 BOOK_GENRES = f"{DATA}/book_genres_filtered.csv"
+
 
 # ============================================================
 # Metrics
@@ -54,14 +55,17 @@ BOOK_GENRES = f"{DATA}/book_genres_filtered.csv"
 def HR5(ranked, gt):
     return 1.0 if gt in ranked[:5] else 0.0
 
+
 def PREC5(ranked, gt):
-    return 1/5 if gt in ranked[:5] else 0.0
+    return 1 / 5 if gt in ranked[:5] else 0.0
+
 
 def NDCG5(ranked, gt):
     if gt in ranked[:5]:
         i = ranked.index(gt)
         return 1 / np.log2(i + 2)
     return 0.0
+
 
 def evaluate(name, scorer, eval_data):
     hr = ndcg = prec = 0
@@ -77,15 +81,17 @@ def evaluate(name, scorer, eval_data):
         ndcg += NDCG5(ranked, gt)
         prec += PREC5(ranked, gt)
 
-    return {"model": name, "HR@5": hr/total, "NDCG@5": ndcg/total, "P@5": prec/total}
+    return {"model": name, "HR@5": hr / total, "NDCG@5": ndcg / total, "P@5": prec / total}
+
 
 # ============================================================
 # Load Data
 # ============================================================
 print("\n===== LOADING DATA =====")
 train_df = pd.read_pickle(TRAIN)
-df_dense = pd.read_pickle(DENSE)   # ONLY for item index
-with open(EVAL, "rb") as f: eval_data = pickle.load(f)
+df_dense = pd.read_pickle(DENSE)  # ONLY for item index
+with open(EVAL, "rb") as f:
+    eval_data = pickle.load(f)
 book_genres = pd.read_csv(BOOK_GENRES)
 
 # ============================================================
@@ -105,12 +111,7 @@ book_genres = book_genres[book_genres.book_id.isin(all_books)].reset_index(drop=
 # ============================================================
 print("Building genre embeddings...")
 
-genre_list = sorted({
-    g.strip()
-    for row in book_genres.genres
-    for g in row.split(",")
-    if g.strip()
-})
+genre_list = sorted({g.strip() for row in book_genres.genres for g in row.split(",") if g.strip()})
 genre_to_idx = {g: i for i, g in enumerate(genre_list)}
 num_genres = len(genre_list)
 
@@ -118,7 +119,8 @@ tag_matrix = np.zeros((num_items, num_genres), dtype=np.float32)
 
 for _, row in book_genres.iterrows():
     b = row.book_id
-    if b not in book_to_idx: continue
+    if b not in book_to_idx:
+        continue
     bi = book_to_idx[b]
     for g in row.genres.split(","):
         g = g.strip()
@@ -133,6 +135,7 @@ tag_norm = tag_matrix / (np.sqrt(tag_matrix.sum(axis=1, keepdims=True)) + 1e-8)
 print("Computing CBF similarity...")
 cbf_sim = cosine_similarity(tag_norm)
 
+
 def cbf_scorer(user, candidates):
     rated = user_items.get(user, [])
     if len(rated) == 0:
@@ -145,14 +148,17 @@ def cbf_scorer(user, candidates):
         out[b] = cbf_sim[bi, rated_idx].mean()
     return out
 
+
 # ============================================================
 # Popularity baseline
 # ============================================================
 print("Training Popularity baseline...")
 pop_counts = train_df.book_id.value_counts()
 
+
 def popularity_scorer(user, candidates):
     return {b: pop_counts.get(b, 0) for b in candidates}
+
 
 pickle.dump(pop_counts, open(f"{MODELS}/popularity.pkl", "wb"))
 
@@ -179,9 +185,11 @@ for _, row in train_df.iterrows():
 
 item_sim = cosine_similarity(R.T)  # item-item cosine
 
+
 def item_cf_scorer(user, candidates):
     rated = user_items.get(user, [])
-    if len(rated) == 0: return {b: 0 for b in candidates}
+    if len(rated) == 0:
+        return {b: 0 for b in candidates}
 
     rated_idx = [book_to_idx[b] for b in rated]
     out = {}
@@ -189,6 +197,7 @@ def item_cf_scorer(user, candidates):
         bi = book_to_idx[b]
         out[b] = item_sim[bi, rated_idx].mean()
     return out
+
 
 pickle.dump(item_sim, open(f"{MODELS}/item_cf.pkl", "wb"))
 
@@ -199,7 +208,7 @@ print("Building User-CF (mean-centered rating vectors)...")
 
 # Build user rating dict
 user_ratings = (
-    train_df.groupby("user_id")[["book_id","rating"]]
+    train_df.groupby("user_id")[["book_id", "rating"]]
     .apply(lambda df: dict(zip(df.book_id, df.rating)))
     .to_dict()
 )
@@ -210,13 +219,15 @@ user_rating_vectors = np.zeros((num_users, num_items))
 for u in user_ids:
     uid = user_to_idx[u]
     items_rated = user_ratings.get(u, {})
-    if len(items_rated) == 0: continue
+    if len(items_rated) == 0:
+        continue
 
     mean_r = np.mean(list(items_rated.values()))
     for b, r in items_rated.items():
         user_rating_vectors[uid, book_to_idx[b]] = r - mean_r
 
 user_sim = cosine_similarity(user_rating_vectors)  # true user-user CF
+
 
 def user_cf_scorer(user, candidates):
     uid = user_to_idx[user]
@@ -232,6 +243,7 @@ def user_cf_scorer(user, candidates):
         else:
             out[b] = np.mean([sim_u[user_to_idx[r]] for r in raters])
     return out
+
 
 pickle.dump(user_sim, open(f"{MODELS}/user_cf.pkl", "wb"))
 
@@ -277,17 +289,21 @@ for ep in range(8):
 hybrid_user_embed = np.concatenate([U, tag_pca_users], axis=1)
 hybrid_item_embed = np.concatenate([V, tag_pca_items], axis=1)
 
+
 def svd_scorer(user, candidates):
     uid = user_to_idx[user]
     u_vec = hybrid_user_embed[uid]
     return {b: u_vec.dot(hybrid_item_embed[book_to_idx[b]]) for b in candidates}
 
+
 pickle.dump(
-    {"user_embed": hybrid_user_embed,
-     "item_embed": hybrid_item_embed,
-     "user_to_idx": user_to_idx,
-     "book_to_idx": book_to_idx},
-    open(f"{MODELS}/svd_hybrid.pkl", "wb")
+    {
+        "user_embed": hybrid_user_embed,
+        "item_embed": hybrid_item_embed,
+        "user_to_idx": user_to_idx,
+        "book_to_idx": book_to_idx,
+    },
+    open(f"{MODELS}/svd_hybrid.pkl", "wb"),
 )
 
 # ============================================================

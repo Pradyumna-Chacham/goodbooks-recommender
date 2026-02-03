@@ -2,13 +2,14 @@
 hybrid_FINAL_CORRECT.py — Z-score + RandomSeed=42
 """
 
+import os
 import pickle
+import random
+
 import numpy as np
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-import random
-import os
 
 # ============================================================
 # GLOBAL RANDOM SEED FOR PERFECT REPRODUCIBILITY
@@ -31,9 +32,9 @@ os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
 DATA = "new_data"
 MODELS = "models"
 
-print("="*60)
+print("=" * 60)
 print("HYBRID: Item-CF + RL (CORRECT EVALUATION, Z-score, Seed=42)")
-print("="*60)
+print("=" * 60)
 
 print("\nLoading data...")
 svd = pickle.load(open(f"{MODELS}/svd_hybrid.pkl", "rb"))
@@ -71,6 +72,7 @@ for i in tqdm(range(len(book_to_idx)), desc="CF vectors"):
 
 cf_vecs = torch.tensor(cf_vecs, dtype=torch.float32)
 
+
 # ============================================================
 # RL Model
 # ============================================================
@@ -78,28 +80,24 @@ class QNet(nn.Module):
     def __init__(self, dim=150):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, 1)
+            nn.Linear(dim, 256), nn.ReLU(), nn.Linear(256, 128), nn.ReLU(), nn.Linear(128, 1)
         )
 
     def forward(self, sa):
         return self.net(sa)
 
+
 device = torch.device("cpu")
 qnet = QNet(dim=150).to(device)
 qnet.load_state_dict(
-    torch.load(f"{MODELS}/rl_cfhard_fast.pth",
-               map_location=device,
-               weights_only=True)
+    torch.load(f"{MODELS}/rl_cfhard_fast.pth", map_location=device, weights_only=True)
 )
 qnet.eval()
 
 user_embed = user_embed.to(device)
 item_embed = item_embed.to(device)
 cf_vecs = cf_vecs.to(device)
+
 
 # ============================================================
 # Scoring Functions
@@ -169,17 +167,19 @@ def zscore_dict(d):
     std = vals.std() + 1e-9
     return {k: (v - mean) / std for k, v in d.items()}
 
+
 def zscore_array(arr):
     mean = arr.mean()
     std = arr.std() + 1e-9
     return (arr - mean) / std
 
+
 # ============================================================
 # Evaluation
 # ============================================================
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 print("EVALUATING THREE STRATEGIES (Z-score, Seed=42)")
-print("="*60)
+print("=" * 60)
 
 # -----------------------------
 # 1. Pure Item-CF
@@ -187,7 +187,7 @@ print("="*60)
 print("\n1. Pure Item-CF")
 cf_hits = 0
 cf_ndcg = 0
-cf_prec = 0   # <-- added
+cf_prec = 0  # <-- added
 
 for u, info in tqdm(eval_data.items(), desc="CF Eval"):
     gt = info["gt"]
@@ -204,7 +204,7 @@ for u, info in tqdm(eval_data.items(), desc="CF Eval"):
         cf_hits += 1
         idx = ranked.index(gt)
         cf_ndcg += 1.0 / np.log2(idx + 2)
-        cf_prec += 1/5     # <-- added
+        cf_prec += 1 / 5  # <-- added
 
 cf_hr = cf_hits / len(eval_data)
 cf_ndcg_score = cf_ndcg / len(eval_data)
@@ -220,7 +220,7 @@ print(f"   P@5:   {cf_prec_score:.4f}")
 print("\n2. Pure RL")
 rl_hits = 0
 rl_ndcg = 0
-rl_prec = 0   # <-- added
+rl_prec = 0  # <-- added
 
 for u, info in tqdm(eval_data.items(), desc="RL Eval"):
     gt = info["gt"]
@@ -233,7 +233,7 @@ for u, info in tqdm(eval_data.items(), desc="RL Eval"):
         rl_hits += 1
         idx = ranked.index(gt)
         rl_ndcg += 1.0 / np.log2(idx + 2)
-        rl_prec += 1/5     # <-- added
+        rl_prec += 1 / 5  # <-- added
 
 rl_hr = rl_hits / len(eval_data)
 rl_ndcg_score = rl_ndcg / len(eval_data)
@@ -249,7 +249,7 @@ print(f"   P@5:   {rl_prec_score:.4f}")
 print("\n3. Hybrid (CF + RL) — Z-score")
 hybrid_hits = 0
 hybrid_ndcg = 0
-hybrid_prec = 0    
+hybrid_prec = 0
 
 CF_WEIGHT = 0.7
 
@@ -267,10 +267,7 @@ for u, info in tqdm(eval_data.items(), desc="Hybrid Eval"):
     cf_z = zscore_dict(cf_scores)
     rl_z = zscore_array(rl_scores)
 
-    blended = {
-        b: CF_WEIGHT * cf_z[b] + (1 - CF_WEIGHT) * rl_z[i]
-        for i, b in enumerate(cands)
-    }
+    blended = {b: CF_WEIGHT * cf_z[b] + (1 - CF_WEIGHT) * rl_z[i] for i, b in enumerate(cands)}
 
     ranked = sorted(cands, key=lambda b: blended[b], reverse=True)
 
@@ -278,7 +275,7 @@ for u, info in tqdm(eval_data.items(), desc="Hybrid Eval"):
         hybrid_hits += 1
         idx = ranked.index(gt)
         hybrid_ndcg += 1.0 / np.log2(idx + 2)
-        hybrid_prec += 1/5    # <-- added
+        hybrid_prec += 1 / 5  # <-- added
 
 hybrid_hr = hybrid_hits / len(eval_data)
 hybrid_ndcg_score = hybrid_ndcg / len(eval_data)
@@ -287,15 +284,17 @@ hybrid_prec_score = hybrid_prec / len(eval_data)
 # ============================================================
 # FINAL RESULTS
 # ============================================================
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 print("📊 FINAL COMPARISON (Z-score, Seed=42)")
-print("="*60)
+print("=" * 60)
 print(f"\n{'Strategy':<20}{'HR@5':<10}{'NDCG@5':<10}{'P@5':<10}")
-print("-"*60)
+print("-" * 60)
 print(f"{'Item-CF (pure)':<20}{cf_hr:<10.4f}{cf_ndcg_score:<10.4f}{cf_prec_score:<10.4f}")
 print(f"{'RL (pure)':<20}{rl_hr:<10.4f}{rl_ndcg_score:<10.4f}{rl_prec_score:<10.4f}")
-print(f"{'Hybrid (CF+RL)':<20}{hybrid_hr:<10.4f}{hybrid_ndcg_score:<10.4f}{hybrid_prec_score:<10.4f}")
-print("="*60)
+print(
+    f"{'Hybrid (CF+RL)':<20}{hybrid_hr:<10.4f}{hybrid_ndcg_score:<10.4f}{hybrid_prec_score:<10.4f}"
+)
+print("=" * 60)
 
 # ============================================================
 # SAVE HYBRID RERANKER (BEST MODEL)

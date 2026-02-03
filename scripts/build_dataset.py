@@ -19,16 +19,18 @@ Outputs saved in new_data_20k/:
 """
 
 import os
+import pickle
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import pickle
 
-DATA_DIR = "data"              # your goodbooks5 raw directory
+DATA_DIR = "data"  # your goodbooks5 raw directory
 GENRE_PATH = "data/book_genres.csv"
 
 SAVE_DIR = "new_data"
 os.makedirs(SAVE_DIR, exist_ok=True)
+
 
 # ------------------------------------------------------------
 # Strict leave-one-out split
@@ -52,6 +54,7 @@ def strict_split(df):
 
     return train_df, test_df
 
+
 # ------------------------------------------------------------
 # Negative sampling
 # ------------------------------------------------------------
@@ -63,8 +66,7 @@ def build_eval_data(train_df, test_df, all_items):
     all_users = set(train_items.index).union(test_items.index)
 
     user_all_items = {
-        u: train_items.get(u, set()).union(test_items.get(u, set()))
-        for u in all_users
+        u: train_items.get(u, set()).union(test_items.get(u, set())) for u in all_users
     }
 
     eval_data = {}
@@ -82,12 +84,10 @@ def build_eval_data(train_df, test_df, all_items):
             continue
 
         negs = np.random.choice(candidate_pool, 99, replace=False)
-        eval_data[u] = {
-            "gt": gt,
-            "neg_items": negs.tolist()
-        }
+        eval_data[u] = {"gt": gt, "neg_items": negs.tolist()}
 
     return eval_data
+
 
 # ------------------------------------------------------------
 # MAIN PIPELINE
@@ -171,6 +171,7 @@ def main():
         pickle.dump(eval_data, f)
 
     print("\nDone! Dataset (20k users) successfully created.")
+
 
 # ------------------------------------------------------------
 if __name__ == "__main__":

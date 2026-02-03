@@ -1,25 +1,14 @@
 import streamlit as st
 
-from goodbooks_rec.io import load_artifacts
-from goodbooks_rec.recommend import recommend_popular
+# Hide sidebar completely on the router page
+st.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-st.set_page_config(page_title="Goodbooks Recommender",page_icon="📚")
-
-st.title("📚 Goodbooks Recommender (MVP)")
-
-k=st.slider("How many recommendations?",5,50,10)
-
-
-try:
-    artifacts=load_artifacts()
-
-    if artifacts.demo_mode:
-        st.warning("Running in DEMO mode (using bundled tiny dataset).")
-    else:
-        st.success("Running with full dataset from ./data")
-
-    recs=recommend_popular(artifacts,k=k)
-    st.dataframe(recs[["book_id","title","n_ratings"]],width="stretch")
-except FileNotFoundError as e:
-    st.error(str(e))
-    st.info("Add the dataset under ./data (books.csv,ratings.csv) or run in demo mode later.")
+# Immediately redirect to Landing page
+st.switch_page("pages/0_Home.py")

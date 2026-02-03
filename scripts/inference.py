@@ -29,14 +29,14 @@ Interactive modes:
 import os
 import pickle
 import random
+
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from rapidfuzz import process, fuzz
+from rapidfuzz import fuzz, process
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
 
 # ============================================================
 # PATHS
@@ -60,6 +60,7 @@ BOOK_META_CSV = f"{RAW}/book_metadata.csv"
 # RL MODEL (same as training)
 # ============================================================
 
+
 class QNet(nn.Module):
     def __init__(self, dim=150):
         super().__init__()
@@ -78,6 +79,7 @@ class QNet(nn.Module):
 # ============================================================
 # LOADING UTILITIES
 # ============================================================
+
 
 def load_pickle(path):
     with open(path, "rb") as f:
@@ -106,8 +108,8 @@ def load_artifacts():
     # -------------------------------
     # Load Item-CF and User-CF matrices
     # -------------------------------
-    item_sim = load_pickle(ITEM_CF_PATH)      # [num_items, num_items]
-    user_sim = load_pickle(USER_CF_PATH)      # [num_users, num_users]
+    item_sim = load_pickle(ITEM_CF_PATH)  # [num_items, num_items]
+    user_sim = load_pickle(USER_CF_PATH)  # [num_users, num_users]
 
     # -------------------------------
     # Load book metadata
@@ -127,10 +129,7 @@ def load_artifacts():
     # -------------------------------
     print("⏳ Building TF-IDF matrix for Content-Based Filtering...")
     cbf_book_ids = list(meta_df["book_id"].values)
-    cbf_texts = [
-        f"{book_meta[b]['title']} {book_meta[b]['authors']}"
-        for b in cbf_book_ids
-    ]
+    cbf_texts = [f"{book_meta[b]['title']} {book_meta[b]['authors']}" for b in cbf_book_ids]
     tfidf = TfidfVectorizer(max_features=5000, stop_words="english")
     cbf_content = tfidf.fit_transform(cbf_texts)  # sparse [num_books, num_terms]
     cbf_book_to_row = {bid: i for i, bid in enumerate(cbf_book_ids)}
@@ -144,11 +143,7 @@ def load_artifacts():
         .apply(lambda df: dict(zip(df["book_id"], df["rating"])))
         .to_dict()
     )
-    user_hist = (
-        train_df.groupby("user_id")["book_id"]
-        .apply(list)
-        .to_dict()
-    )
+    user_hist = train_df.groupby("user_id")["book_id"].apply(list).to_dict()
 
     # -------------------------------
     # Precompute CF vectors (top-50 neighbors)
@@ -214,6 +209,7 @@ def load_artifacts():
 # LOW-LEVEL SCORING HELPERS
 # ============================================================
 
+
 def zscore_dict(d):
     if not d:
         return {}
@@ -229,6 +225,7 @@ def zscore_array(x):
 
 
 # ---------- RL scoring (user + item) ----------
+
 
 def score_with_rl(user_id, candidates, A):
     """
@@ -269,12 +266,12 @@ def score_with_rl(user_id, candidates, A):
     if not item_vecs:
         return np.zeros(len(candidates))
 
-    V = torch.stack(item_vecs)                              # (N, 150)
-    S = state_vec.unsqueeze(0).expand(len(V), -1)           # (N, 150)
-    SA = S * V                                              # (N, 150)
+    V = torch.stack(item_vecs)  # (N, 150)
+    S = state_vec.unsqueeze(0).expand(len(V), -1)  # (N, 150)
+    SA = S * V  # (N, 150)
 
     with torch.no_grad():
-        q_vals = qnet(SA).squeeze(1)                        # (N,)
+        q_vals = qnet(SA).squeeze(1)  # (N,)
 
     out = np.zeros(len(candidates), dtype=np.float32)
     q_np = q_vals.cpu().numpy()
@@ -288,6 +285,7 @@ def score_with_rl(user_id, candidates, A):
 # ============================================================
 
 # ---------- Item-CF scoring for user ----------
+
 
 def score_candidates_with_itemcf(history, candidates, A):
     """
@@ -314,6 +312,7 @@ def score_candidates_with_itemcf(history, candidates, A):
 
 # ---------- User-CF scoring ----------
 
+
 def recommend_usercf_for_user(user_id, top_k, A):
     """
     User-CF recommendations:
@@ -329,11 +328,11 @@ def recommend_usercf_for_user(user_id, top_k, A):
         return []
 
     uid = user_to_idx[user_id]
-    sims = user_sim[uid].copy()               # (num_users,)
+    sims = user_sim[uid].copy()  # (num_users,)
 
     # Exclude self
     sims[uid] = -1.0
-    top_neighbors = np.argsort(sims)[-50:]    # top-50 neighbors
+    top_neighbors = np.argsort(sims)[-50:]  # top-50 neighbors
 
     target_ratings = user_ratings.get(user_id, {})
     rated_books = set(target_ratings.keys())
@@ -362,6 +361,7 @@ def recommend_usercf_for_user(user_id, top_k, A):
 
 
 # ---------- SVD user-based scoring ----------
+
 
 def recommend_svd_for_user(user_id, top_k, A):
     """
@@ -402,6 +402,7 @@ def recommend_svd_for_user(user_id, top_k, A):
 
 # ---------- CBF (TF-IDF) user-based scoring ----------
 
+
 def recommend_cbf_for_user(user_id, top_k, A, rating_threshold=4.0):
     """
     Content-Based Filtering:
@@ -429,7 +430,6 @@ def recommend_cbf_for_user(user_id, top_k, A, rating_threshold=4.0):
     liked_rows = [cbf_book_to_row[b] for b in liked_books]
     user_vec = np.asarray(cbf_content[liked_rows].mean(axis=0)).reshape(1, -1)
 
-
     sims = cosine_similarity(user_vec, cbf_content).ravel()  # (num_books,)
 
     rated = set(ratings.keys())
@@ -445,6 +445,7 @@ def recommend_cbf_for_user(user_id, top_k, A, rating_threshold=4.0):
 
 
 # ---------- Pure RL, Item-CF, Hybrid wrappers ----------
+
 
 def recommend_itemcf_for_user(user_id, top_k, A):
     """User-level Item-CF: score unseen books by similarity to user's history."""
@@ -520,6 +521,7 @@ def recommend_hybrid_for_user(user_id, top_k, A):
 # ============================================================
 # ITEM-BASED RECS FOR A GIVEN BOOK
 # ============================================================
+
 
 def similar_itemcf_books(book_id, top_k, A):
     """Item-CF similar books for a given book_id."""
@@ -633,12 +635,12 @@ def similar_rl_books(book_id, top_k, A):
         full_vec = torch.cat([item_vec, cf_vec])
         item_vecs.append(full_vec)
 
-    V = torch.stack(item_vecs)                            # (N, 150)
-    S = state_vec.unsqueeze(0).expand(len(V), -1)         # (N, 150)
-    SA = S * V                                            # (N, 150)
+    V = torch.stack(item_vecs)  # (N, 150)
+    S = state_vec.unsqueeze(0).expand(len(V), -1)  # (N, 150)
+    SA = S * V  # (N, 150)
 
     with torch.no_grad():
-        q_vals = qnet(SA).squeeze(1).cpu().numpy()        # (N,)
+        q_vals = qnet(SA).squeeze(1).cpu().numpy()  # (N,)
 
     order = np.argsort(q_vals)[::-1]
 
@@ -673,8 +675,7 @@ def similar_hybrid_books(book_id, top_k, A, pool_size=200):
     all_books = set(icf_score.keys()) | set(rl_score.keys())
 
     blended = {
-        b: CF_WEIGHT * icf_z.get(b, 0.0) + (1 - CF_WEIGHT) * rl_z.get(b, 0.0)
-        for b in all_books
+        b: CF_WEIGHT * icf_z.get(b, 0.0) + (1 - CF_WEIGHT) * rl_z.get(b, 0.0) for b in all_books
     }
     ranked = sorted(blended.items(), key=lambda x: x[1], reverse=True)
     return [b for b, _ in ranked[:top_k]]
@@ -683,6 +684,7 @@ def similar_hybrid_books(book_id, top_k, A, pool_size=200):
 # ============================================================
 # PRINT HELPERS
 # ============================================================
+
 
 def print_book(bid, meta):
     m = meta.get(bid, {})
@@ -703,6 +705,7 @@ def print_book_list(title, books, meta):
 # ============================================================
 # COMPARISON VIEW FOR A USER
 # ============================================================
+
 
 def show_all_models_for_user(user_id, A, top_k=10):
     meta = A["book_meta"]
@@ -737,6 +740,7 @@ def show_all_models_for_user(user_id, A, top_k=10):
 # ============================================================
 # MENU ACTIONS
 # ============================================================
+
 
 def action_random_user(A):
     """Pick random user and show recs from all models."""
@@ -830,6 +834,7 @@ def action_user_input(A):
 # ============================================================
 # MAIN LOOP
 # ============================================================
+
 
 def main():
     A = load_artifacts()

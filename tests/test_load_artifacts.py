@@ -1,11 +1,15 @@
-import pytest 
+# tests/test_load_artifacts.py
 from pathlib import Path
-from goodbooks_rec.io import load_artifacts
 
-def test_load_artifacts_missing_data(tmp_path:Path):
-    with pytest.raises(FileNotFoundError) as e:
-        load_artifacts(data_dir=tmp_path,models_dir=tmp_path)
-    assert "books.csv" in str(e.value)
-    assert "ratings.csv" in str(e.value)
+import pytest
 
-    
+from goodbooks_rec.multimodel import \
+    load_mm_artifacts  # adjust import to your real location
+
+
+def test_load_artifacts_missing_data(tmp_path: Path):
+    missing_item = tmp_path / "missing_item_topk.npz"
+    missing_user = tmp_path / "missing_user_topk.npz"
+
+    with pytest.raises(FileNotFoundError):
+        load_mm_artifacts(item_topk_path=missing_item, user_topk_path=missing_user)

@@ -4,10 +4,11 @@ import pandas as pd
 
 from .io import Artifacts
 
-def recommend_popular(artifacts:Artifacts,k: int=10) -> pd.DataFrame:
+
+def recommend_popular(artifacts: Artifacts, k: int = 10) -> pd.DataFrame:
     """
     Docstring for recommend_popular
-    
+
     :param artifacts: books,rating and popularity
     :type artifacts: Artifacts
     :param k: No.of books
@@ -16,12 +17,15 @@ def recommend_popular(artifacts:Artifacts,k: int=10) -> pd.DataFrame:
     :rtype: DataFrame
     """
 
-    ratings=artifacts.ratings
+    ratings = artifacts.ratings
     books = artifacts.books
 
-    counts=(
-        ratings.groupby("book_id").size().reset_index(name="n_ratings").sort_values("n_ratings",ascending=False).head(k)
+    counts = (
+        ratings.groupby("book_id")
+        .size()
+        .reset_index(name="n_ratings")
+        .sort_values("n_ratings", ascending=False)
+        .head(k)
     )
 
-    return counts.merge(books,on="book_id",how="left")
-
+    return counts.merge(books, on="book_id", how="left")
