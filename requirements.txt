@@ -1,3 +1,5 @@
+--index-url https://download.pytorch.org/whl/cpu
+torch==2.10.0
 altair==6.0.0
 astroid==4.0.3
 attrs==25.4.0
@@ -13,7 +15,6 @@ filelock==3.20.3
 fsspec==2026.1.0
 gitdb==4.0.12
 GitPython==3.1.46
--e git+https://github.com/Pradyumna-Chacham/goodbooks-recommender.git@7e6a28c82d1982a52b1b03e04babe987d75ca71c#egg=goodbooks_rec
 idna==3.11
 iniconfig==2.3.0
 isort==7.0.0
