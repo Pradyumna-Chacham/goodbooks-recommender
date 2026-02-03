@@ -48,8 +48,7 @@ Thumbs.db
 # NOTE: Raw dataset CSVs are intentionally versioned.
 # Only ignore derived or regenerated artifacts.
 data/
-new_data/
-report/
+
 
 
 # ======================
