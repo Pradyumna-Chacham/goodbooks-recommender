@@ -20,6 +20,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install package
+        run: |
+          pip install -e .
+
       - name: Run tests
         run: |
           pytest -q --cov=goodbooks_rec --cov-report=term-missing
