@@ -50,10 +50,7 @@ Thumbs.db
 data/
 new_data/
 report/
-models/*.pkl
-models/*.pth
-models/*.pt
-models/*.npz
+
 
 # ======================
 # Generated Figures / Outputs
